@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
 from sklearn.linear_model import LogisticRegression
 from lightgbm import LGBMClassifier
 import matplotlib.pyplot as plt
@@ -38,7 +38,7 @@ df['total_assets'] = df[['residential_assets_value', 'commercial_assets_value',
 df['debt_to_income_ratio'] = df['loan_amount'] / (df['income_annum'] + 1)
 
 # === 6. Özellik Seçimi ===
-drop_cols = ["loan_id", "loan_status", "cibil_score"]  # cibil_score çıkarıldı
+drop_cols = ["loan_id", "loan_status", "cibil_score"]
 X = df.drop(columns=drop_cols)
 y = df["loan_status"]
 
@@ -52,9 +52,25 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# === 9. Model Eğitimi ===
-model = LGBMClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
-model.fit(X_train_scaled, y_train)
+# === 9. LightGBM - Overfitting Önlemleriyle Eğit ===
+model = LGBMClassifier(
+    n_estimators=1000,
+    learning_rate=0.05,
+    max_depth=4,
+    num_leaves=15,
+    min_child_samples=30,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    reg_alpha=1.0,
+    reg_lambda=1.0,
+    random_state=42
+)
+
+model.fit(
+    X_train_scaled, y_train,
+    eval_set=[(X_test_scaled, y_test)]
+)
+
 
 # === 10. Değerlendirme ===
 y_pred = model.predict(X_test_scaled)
@@ -71,12 +87,23 @@ plt.grid()
 plt.show()
 
 # === 12. Modeli Kaydet ===
-joblib.dump(model, "kredi_modeli_v2.pkl")
-joblib.dump(scaler, "kredi_scaler_v2.pkl")
+joblib.dump(model, "kredi_modeli_v3.pkl")
+joblib.dump(scaler, "kredi_scaler_v3.pkl")
 print("✅ Model ve scaler kaydedildi.")
 
 # === 13. Cross-Validation AUC ===
-model_cv = LGBMClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
+model_cv = LGBMClassifier(
+    n_estimators=100,
+    learning_rate=0.05,
+    max_depth=4,
+    num_leaves=15,
+    min_child_samples=30,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    reg_alpha=1.0,
+    reg_lambda=1.0,
+    random_state=42
+)
 cv_auc_scores = cross_val_score(model_cv, X, y, cv=5, scoring='roc_auc')
 print("\n📊 Cross-Validation AUC Skorları:", cv_auc_scores)
 print("✅ Ortalama AUC:", np.mean(cv_auc_scores))
@@ -87,12 +114,26 @@ lr_model.fit(X_train_scaled, y_train)
 y_prob_lr = lr_model.predict_proba(X_test_scaled)[:, 1]
 print("\n📈 Logistic Regression AUC:", roc_auc_score(y_test, y_prob_lr))
 
-# === 15. Korelasyonlar ===
+# === 15. Korelasyonlar ve Öznitelik Önemi ===
 correlations = df.corr(numeric_only=True)
 print("\n🔎 loan_status ile korelasyonlar:")
 print(correlations["loan_status"].sort_values(ascending=False))
 
 importance = pd.Series(model.feature_importances_, index=X.columns)
 importance.nlargest(10).plot(kind='barh')
-plt.title("Öznitelik Önem Grafiği")
+plt.title("Öznitelik Önem Grafiği - LightGBM")
 plt.show()
+
+# === 16. Train/Test Accuracy Karşılaştırması ===
+train_preds = model.predict(X_train_scaled)
+test_preds = model.predict(X_test_scaled)
+
+train_acc = accuracy_score(y_train, train_preds)
+test_acc = accuracy_score(y_test, test_preds)
+
+print(f"\n🔍 Eğitim Seti Doğruluğu: {train_acc:.4f}")
+print(f"🔍 Test Seti Doğruluğu  : {test_acc:.4f}")
+if train_acc - test_acc > 0.05:
+    print("⚠ Model yüksek ihtimalle overfitting yapıyor.")
+else:
+    print("✅ Model dengeli, overfitting gözlenmiyor.")
