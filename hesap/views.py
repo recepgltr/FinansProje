@@ -11,7 +11,7 @@ from .models import UserProfile
 
 # === MODELİ TEK SEFERDE YÜKLE ===
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, 'kredi_modeli_v2.pkl')
+MODEL_PATH = os.path.join(BASE_DIR, 'kredi_modeli_v3.pkl')
 kredi_model = joblib.load(MODEL_PATH)
 
 # === Giriş Sayfası ===
