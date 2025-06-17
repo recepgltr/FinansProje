@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex justify-content-center">
+  <div class="card shadow p-4 rounded-4 border-0" style="max-width: 550px; width: 100%; background-color: var(--bs-body-bg); color: var(--bs-body-color);">
+
+    <!-- Başarı Mesajı -->
+    {% if messages %}
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {% for message in messages %}
+          {{ message }}
+        {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endif %}
+
+    <!-- Başlık -->
+    <div class="text-center mb-4">
+      <i class="bi bi-person-circle" style="font-size: 3rem; color: #6f42c1;"></i>
+      <h4 class="mt-2 fw-semibold">Profil Sayfası</h4>
+    </div>
+
+    <!-- Profil Resmi -->
+    <div class="text-center mb-4">
+      {% if user.userprofile.profil_resmi %}
+        <img id="previewImg" src="{{ user.userprofile.profil_resmi.url }}" class="rounded-circle border shadow-sm"
+             style="width: 120px; height: 120px; object-fit: cover;" alt="Profil Resmi">
+      {% else %}
+        <img id="previewImg" src="#" class="rounded-circle border shadow-sm d-none"
+             style="width: 120px; height: 120px; object-fit: cover;" alt="Profil Önizleme">
+      {% endif %}
+    </div>
+
+    <!-- Form -->
+    <form method="POST" enctype="multipart/form-data" class="mb-4">
+      {% csrf_token %}
+
+      <!-- Bio -->
+      <div class="mb-3">
+        <label for="id_bio" class="form-label fw-medium">Hakkında (Bio):</label>
+        <textarea name="bio" id="id_bio" class="form-control rounded-3 shadow-sm" rows="4" maxlength="200">{{ form.bio.value }}</textarea>
+        <small id="bioCounter" class="form-text text-muted text-end d-block mt-1">0/200 karakter</small>
+      </div>
+
+      <!-- Fotoğraf -->
+      <div class="mb-3">
+        <label for="id_profil_resmi" class="form-label fw-medium">Profil Resmini Güncelle:</label>
+        <input type="file" name="profil_resmi" id="id_profil_resmi" class="form-control shadow-sm">
+      </div>
+
+      <!-- Güncelle Butonu -->
+      <div class="text-center mt-3">
+        <button type="submit" class="btn btn-success px-4 py-2 rounded-3">
+          <i class="bi bi-upload me-1"></i>Güncelle
+        </button>
+      </div>
+    </form>
+
+    <hr>
+
+    <!-- Bilgiler -->
+    <div class="mt-3">
+      <p class="mb-2">
+        <strong><i class="bi bi-person-badge me-1"></i> Kullanıcı Adı:</strong>
+        <span class="text-muted">{{ user.username }}</span>
+      </p>
+      <p class="mb-2">
+        <strong><i class="bi bi-envelope me-1"></i> Email:</strong>
+        <span class="text-muted">{{ user.email }}</span>
+      </p>
+      <p class="mb-0">
+        <strong><i class="bi bi-clock me-1"></i> Son Giriş:</strong>
+        <span class="text-muted">{{ user.last_login|date:"d F Y H:i" }}</span>
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Karakter Sayacı ve Önizleme Scriptleri -->
+<script>
+  // Bio karakter sayacı
+  const bioInput = document.getElementById('id_bio');
+  const counter = document.getElementById('bioCounter');
+  function updateCounter() {
+    counter.innerText = `${bioInput.value.length}/200 karakter`;
+  }
+  bioInput.addEventListener('input', updateCounter);
+  updateCounter();
+
+  // Profil resmi önizleme
+  const fileInput = document.getElementById('id_profil_resmi');
+  const previewImg = document.getElementById('previewImg');
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        previewImg.src = evt.target.result;
+        previewImg.classList.remove('d-none');
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+</script>
+{% endblock %}

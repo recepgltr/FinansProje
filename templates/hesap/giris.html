@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Giriş Yap</h2>
+<form method="POST">
+  {% csrf_token %}
+  <input type="text" name="username" placeholder="Kullanıcı Adı" class="form-control mb-2" required>
+  <input type="password" name="password" placeholder="Şifre" class="form-control mb-2" required>
+  <button type="submit" class="btn btn-primary">Giriş Yap</button>
+</form>
+{% endblock %}
