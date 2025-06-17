@@ -9,10 +9,12 @@ from django.contrib import messages
 from .forms import ProfilGuncelleForm, KrediTahminForm
 from .models import UserProfile
 
-# === MODELİ TEK SEFERDE YÜKLE ===
+# === MODELİ VE SCALER'I YÜKLE ===
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, 'kredi_modeli_v3.pkl')
+SCALER_PATH = os.path.join(BASE_DIR, 'kredi_scaler_v3.pkl')
 kredi_model = joblib.load(MODEL_PATH)
+scaler = joblib.load(SCALER_PATH)
 
 # === Giriş Sayfası ===
 def anasayfa(request):
@@ -88,9 +90,6 @@ def profil(request):
 
 
 # === Kredi Tahmin Sayfası ===
-from django.contrib.auth.decorators import login_required
-import numpy as np
-
 @login_required
 def kredi_tahmin(request):
     tahmin = None
@@ -101,23 +100,20 @@ def kredi_tahmin(request):
         if form.is_valid():
             data = form.cleaned_data
 
-            # === education & self_employed (LabelEncoder ile kodlandı)
             education = 1 if data['education'] == "Graduate" else 0
             self_employed = 1 if data['self_employed'] == "Yes" else 0
 
-            # === cibil_group
             score = data['cibil_score']
             if score <= 600:
-                cibil_group = 0  # low
+                cibil_group = 0
                 cibil_str = "Düşük"
             elif score <= 750:
-                cibil_group = 1  # medium
+                cibil_group = 1
                 cibil_str = "Orta"
             else:
-                cibil_group = 2  # high
+                cibil_group = 2
                 cibil_str = "Yüksek"
 
-            # === total_assets & debt_to_income_ratio
             total_assets = (
                 data['residential_assets_value'] +
                 data['commercial_assets_value'] +
@@ -126,8 +122,7 @@ def kredi_tahmin(request):
             )
             debt_to_income_ratio = data['loan_amount'] / (data['income_annum'] + 1)
 
-            # === Sıralı giriş verisi (tam 13 özellik)
-            girdi = np.array([[
+            girdi = np.array([[ 
                 data['no_of_dependents'],
                 education,
                 self_employed,
@@ -143,7 +138,10 @@ def kredi_tahmin(request):
                 debt_to_income_ratio
             ]])
 
-            sonuc = kredi_model.predict(girdi)[0]
+            # === Normalize işlemi ===
+            girdi_scaled = scaler.transform(girdi)
+
+            sonuc = kredi_model.predict(girdi_scaled)[0]
             tahmin = "✅ Kredi Onaylandı" if sonuc == 1 else "❌ Kredi Reddedildi"
 
             detaylar = {
