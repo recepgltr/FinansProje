@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow rounded-4 p-4">
+    <h3 class="text-primary text-center mb-4">📋 Başvuru Detayı</h3>
+
+    <div class="row">
+      <div class="col-md-6">
+        <p><strong>Tarih:</strong> {{ basvuru.tarih|date:"d M Y H:i" }}</p>
+        <p><strong>Sonuç:</strong>
+          {% if basvuru.sonuc == "Onaylandı" %}
+            <span class="badge bg-success">{{ basvuru.sonuc }}</span>
+          {% else %}
+            <span class="badge bg-danger">{{ basvuru.sonuc }}</span>
+          {% endif %}
+        </p>
+        <p><strong>Bağımlı Sayısı:</strong> {{ basvuru.no_of_dependents }}</p>
+        <p><strong>Eğitim:</strong> {{ basvuru.education }}</p>
+        <p><strong>Serbest Meslek:</strong> {{ basvuru.self_employed }}</p>
+        <p><strong>Gelir:</strong> {{ basvuru.income_annum }} ₺</p>
+        <p><strong>Kredi Miktarı:</strong> {{ basvuru.loan_amount }} ₺</p>
+        <p><strong>Vade:</strong> {{ basvuru.loan_term }} ay</p>
+        <p><strong>CIBIL Skoru:</strong> {{ basvuru.cibil_score }}</p>
+      </div>
+      <div class="col-md-6">
+        <p><strong>Konut Varlığı:</strong> {{ basvuru.residential_assets_value }} ₺</p>
+        <p><strong>Ticari Varlık:</strong> {{ basvuru.commercial_assets_value }} ₺</p>
+        <p><strong>Lüks Varlık:</strong> {{ basvuru.luxury_assets_value }} ₺</p>
+        <p><strong>Banka Varlığı:</strong> {{ basvuru.bank_asset_value }} ₺</p>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{% url 'basvuru_gecmisi' %}" class="btn btn-outline-primary">🔙 Geri Dön</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

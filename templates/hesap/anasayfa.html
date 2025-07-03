@@ -8,59 +8,75 @@
   {% if not user.is_authenticated %}
     <a href="{% url 'giris' %}" class="btn btn-primary mt-3">Giriş Yap</a>
     <a href="{% url 'kayit' %}" class="btn btn-outline-primary mt-3 ms-2">Kayıt Ol</a>
-
   {% else %}
 
     {% if request.session.giris_basarili %}
       <div id="giris-alert" class="alert alert-success mt-3">Giriş yaptınız ✅</div>
-      {% comment %} Session temizliği view tarafında yapılır {% endcomment %}
       {% firstof '' '' %}
     {% endif %}
 
-    <!-- Dashboard Kartları -->
     <div class="container mt-5">
       <div class="row g-4 justify-content-center">
 
-        <!-- Son Başvuru Kartı -->
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 card-box card-success h-100">
+        <!-- Son Başvuru -->
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
               <h5 class="card-title text-success fw-bold mb-3">
                 <i class="bi bi-check-circle-fill me-2"></i>Son Başvurunuz
               </h5>
-              <p class="card-text fs-6">
-                Durum: <strong>Onaylandı ✅</strong><br>
-                Tarih: <strong>05 Haziran 2025</strong>
-              </p>
+              {% if son_basvuru %}
+                <p class="card-text fs-6">
+                  Durum: <strong>{{ son_basvuru.sonuc }}</strong><br>
+                  Tarih: <strong>{{ son_basvuru.tarih|date:"d F Y" }}</strong>
+                </p>
+              {% else %}
+                <p class="text-muted">Henüz başvuru yapılmadı.</p>
+              {% endif %}
             </div>
           </div>
         </div>
 
-        <!-- Başvuru İstatistiği -->
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 card-box card-info h-100">
+        <!-- Başvuru İstatistik -->
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
               <h5 class="card-title text-primary fw-bold mb-3">
                 <i class="bi bi-bar-chart-fill me-2"></i>Başvuru İstatistiği
               </h5>
               <p class="card-text fs-6">
-                Toplam başvuru: <strong>347</strong><br>
-                Onay oranı: <strong>%68</strong>
+                Toplam başvuru: <strong>{{ toplam_basvuru }}</strong><br>
+                Onay oranı: <strong>%{{ onay_orani }}</strong>
               </p>
             </div>
           </div>
         </div>
 
         <!-- Model Başarısı -->
-        <div class="col-md-4">
-          <div class="card shadow-sm border-0 card-box card-warning h-100">
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 h-100">
             <div class="card-body">
               <h5 class="card-title text-warning fw-bold mb-3">
                 <i class="bi bi-cpu-fill me-2"></i>Model Başarısı
               </h5>
               <p class="card-text fs-6">
-                Tahmin doğruluğu: <strong>%80.5</strong><br>
-                Son güncelleme: <strong>Haziran 2025</strong>
+                Tahmin doğruluğu: <strong>{% if model_basari %}%{{ model_basari }}{% else %}-{% endif %}</strong><br>
+                Son güncelleme: <strong>{% if model_guncelleme %}{{ model_guncelleme }}{% else %}-{% endif %}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kur Bilgisi -->
+        <div class="col-md-3">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+              <h5 class="card-title text-secondary fw-bold mb-3">
+                <i class="bi bi-currency-exchange me-2"></i>Kur Bilgisi
+              </h5>
+              <p class="card-text fs-6">
+                USD/TL: <strong>{{ kur_usd|default:"-" }} ₺</strong><br>
+                EUR/TL: <strong>{{ kur_eur|default:"-" }} ₺</strong>
               </p>
             </div>
           </div>
@@ -68,13 +84,29 @@
 
       </div>
 
-      <!-- 🟡 Kredi Tahmin Butonu -->
+      <!-- Grafikler -->
+      <div class="row mt-5 g-4">
+        <div class="col-md-6">
+          <div class="card shadow-sm p-3">
+            <h5 class="text-center fw-semibold mb-3">Başvuru Sonuç Oranı</h5>
+            <canvas id="donutChart" height="200"></canvas>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card shadow-sm p-3">
+            <h5 class="text-center fw-semibold mb-3">Son 5 Günlük Başvurular</h5>
+            <canvas id="barChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kredi Tahmin Butonu -->
       <div class="mt-5 text-center">
         <a href="{% url 'kredi_tahmin' %}" class="btn btn-warning btn-lg px-4 py-2 shadow-sm">
           🔍 Kredi Tahmini Yap
         </a>
       </div>
-
     </div>
   {% endif %}
 </div>
@@ -90,5 +122,42 @@
       setTimeout(() => alertBox.style.display = 'none', 500);
     }
   }, 1000);
+
+  const donutCtx = document.getElementById('donutChart').getContext('2d');
+  new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Onaylandı', 'Reddedildi'],
+      datasets: [{
+        data: [{{ onay_sayisi|default:0 }}, {{ red_sayisi|default:0 }}],
+        backgroundColor: ['#198754', '#dc3545'],
+        borderWidth: 1
+      }]
+    }
+  });
+
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ labels|safe }},
+      datasets: [{
+        label: 'Günlük Başvuru Sayısı',
+        data: {{ counts|safe }},
+        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+        borderColor: 'rgba(13, 110, 253, 1)',
+        borderWidth: 1,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
 </script>
 {% endblock %}

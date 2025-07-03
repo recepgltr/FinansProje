@@ -46,7 +46,27 @@
           </div>
         </div>
         {% endif %}
+      </div>
+    {% endif %}
 
+    {% if oneriler %}
+      <div class="mt-4">
+        <div class="card border-warning shadow-sm rounded-4">
+          <div class="card-header bg-warning-subtle text-dark fw-semibold fs-5 d-flex align-items-center">
+            <i class="bi bi-lightbulb-fill me-2 text-warning"></i> Kredi Tavsiyeleri
+          </div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              {% for item in oneriler %}
+                <li class="list-group-item d-flex align-items-center">
+                  <i class="bi bi-chevron-right text-primary me-2"></i>
+                  <span class="text-dark">{{ item }}</span>
+                  <span class="badge bg-info-subtle text-dark ms-auto">Öneri</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
       </div>
     {% endif %}
 
