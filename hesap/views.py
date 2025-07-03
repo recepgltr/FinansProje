@@ -12,10 +12,16 @@ from django.contrib import messages
 from .forms import ProfilGuncelleForm, KrediTahminForm
 from .models import UserProfile, Basvuru
 
+<<<<<<< HEAD
 # === MODEL YÜKLE ===
+=======
+# === MODELİ VE SCALER'I YÜKLE ===
+>>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, 'kredi_modeli_v3.pkl')
+SCALER_PATH = os.path.join(BASE_DIR, 'kredi_scaler_v3.pkl')
 kredi_model = joblib.load(MODEL_PATH)
+scaler = joblib.load(SCALER_PATH)
 
 # === Anasayfa ===
 def anasayfa(request):
@@ -131,9 +137,19 @@ def profil(request):
         messages.success(request, "Profil başarıyla güncellendi ✅")
         return redirect("profil")
 
+<<<<<<< HEAD
     return render(request, "hesap/profil.html", {"form": form, "profil": profil})
 
 # === Kredi Tahmin ===
+=======
+    return render(request, "hesap/profil.html", {
+        "form": form,
+        "profil": profil
+    })
+
+
+# === Kredi Tahmin Sayfası ===
+>>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
 @login_required
 def kredi_tahmin(request):
     tahmin, detaylar, oneriler = None, {}, []
@@ -148,11 +164,22 @@ def kredi_tahmin(request):
 
             score = data['cibil_score']
             if score <= 600:
+<<<<<<< HEAD
                 cibil_group, cibil_str = 0, "Düşük"
             elif score <= 750:
                 cibil_group, cibil_str = 1, "Orta"
             else:
                 cibil_group, cibil_str = 2, "Yüksek"
+=======
+                cibil_group = 0
+                cibil_str = "Düşük"
+            elif score <= 750:
+                cibil_group = 1
+                cibil_str = "Orta"
+            else:
+                cibil_group = 2
+                cibil_str = "Yüksek"
+>>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
 
             total_assets = (
                 data['residential_assets_value'] +
@@ -162,7 +189,11 @@ def kredi_tahmin(request):
             )
             debt_to_income_ratio = data['loan_amount'] / (data['income_annum'] + 1)
 
+<<<<<<< HEAD
             girdi = np.array([[  # sıralı 13 öznitelik
+=======
+            girdi = np.array([[ 
+>>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
                 data['no_of_dependents'],
                 education,
                 self_employed,
@@ -178,7 +209,10 @@ def kredi_tahmin(request):
                 debt_to_income_ratio
             ]])
 
-            sonuc = kredi_model.predict(girdi)[0]
+            # === Normalize işlemi ===
+            girdi_scaled = scaler.transform(girdi)
+
+            sonuc = kredi_model.predict(girdi_scaled)[0]
             tahmin = "✅ Kredi Onaylandı" if sonuc == 1 else "❌ Kredi Reddedildi"
 
             # Kur Bilgileri API
@@ -235,6 +269,7 @@ def kredi_tahmin(request):
     return render(request, "hesap/tahmin.html", {
         "form": form,
         "tahmin": tahmin,
+<<<<<<< HEAD
         "detaylar": detaylar,
         "oneriler": oneriler
     })
@@ -258,3 +293,7 @@ def basvuru_sil(request, basvuru_id):
     basvuru.delete()
     messages.success(request, "Başvuru başarıyla silindi.")
     return redirect("basvuru_gecmisi")
+=======
+        "detaylar": detaylar
+    })
+>>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
