@@ -8,7 +8,7 @@ import joblib
 import matplotlib.pyplot as plt
 
 # === 1. Veri Yükleme ===
-df = pd.read_csv("loan_approval_dataset.csv")
+df = pd.read_csv("loan_approval_dataset_tl.csv")
 df.columns = df.columns.str.strip()
 
 # === 2. Kategorik Değerleri Encode Et ===

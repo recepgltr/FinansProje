@@ -11,15 +11,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import ProfilGuncelleForm, KrediTahminForm
 from .models import UserProfile, Basvuru
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .serializers import KrediTahminSerializer
 
-<<<<<<< HEAD
-# === MODEL YÜKLE ===
-=======
 # === MODELİ VE SCALER'I YÜKLE ===
->>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, 'kredi_modeli_v3.pkl')
-SCALER_PATH = os.path.join(BASE_DIR, 'kredi_scaler_v3.pkl')
+MODEL_PATH = os.path.join(BASE_DIR, 'kredi_model_birlesik.pkl')
+SCALER_PATH = os.path.join(BASE_DIR, 'kredi_scaler_birlesik.pkl')
 kredi_model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
@@ -48,7 +47,6 @@ def anasayfa(request):
         model_basari = 80.5
         model_guncelleme = "Haziran 2025"
 
-        # === KUR BİLGİLERİ CANLI OLARAK API'DEN ÇEKİLİYOR ===
         try:
             api_key = "87a957afa3b6b2dbf08ccd85828de8c4"
             url = f"http://data.fixer.io/api/latest?access_key={api_key}&symbols=USD,TRY"
@@ -61,7 +59,7 @@ def anasayfa(request):
             eur = round(eur_try, 2)
         except Exception as e:
             print("Kur API hatası:", e)
-            usd = eur = altin = "-"
+            usd = eur = "-"
 
         context.update({
             'labels': labels,
@@ -137,19 +135,9 @@ def profil(request):
         messages.success(request, "Profil başarıyla güncellendi ✅")
         return redirect("profil")
 
-<<<<<<< HEAD
     return render(request, "hesap/profil.html", {"form": form, "profil": profil})
 
 # === Kredi Tahmin ===
-=======
-    return render(request, "hesap/profil.html", {
-        "form": form,
-        "profil": profil
-    })
-
-
-# === Kredi Tahmin Sayfası ===
->>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
 @login_required
 def kredi_tahmin(request):
     tahmin, detaylar, oneriler = None, {}, []
@@ -164,22 +152,11 @@ def kredi_tahmin(request):
 
             score = data['cibil_score']
             if score <= 600:
-<<<<<<< HEAD
                 cibil_group, cibil_str = 0, "Düşük"
             elif score <= 750:
                 cibil_group, cibil_str = 1, "Orta"
             else:
                 cibil_group, cibil_str = 2, "Yüksek"
-=======
-                cibil_group = 0
-                cibil_str = "Düşük"
-            elif score <= 750:
-                cibil_group = 1
-                cibil_str = "Orta"
-            else:
-                cibil_group = 2
-                cibil_str = "Yüksek"
->>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
 
             total_assets = (
                 data['residential_assets_value'] +
@@ -189,11 +166,7 @@ def kredi_tahmin(request):
             )
             debt_to_income_ratio = data['loan_amount'] / (data['income_annum'] + 1)
 
-<<<<<<< HEAD
-            girdi = np.array([[  # sıralı 13 öznitelik
-=======
-            girdi = np.array([[ 
->>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
+            girdi = np.array([[
                 data['no_of_dependents'],
                 education,
                 self_employed,
@@ -209,13 +182,10 @@ def kredi_tahmin(request):
                 debt_to_income_ratio
             ]])
 
-            # === Normalize işlemi ===
             girdi_scaled = scaler.transform(girdi)
-
             sonuc = kredi_model.predict(girdi_scaled)[0]
             tahmin = "✅ Kredi Onaylandı" if sonuc == 1 else "❌ Kredi Reddedildi"
 
-            # Kur Bilgileri API
             try:
                 api_key = "87a957afa3b6b2dbf08ccd85828de8c4"
                 url = f"http://data.fixer.io/api/latest?access_key={api_key}&symbols=USD,TRY"
@@ -262,14 +232,13 @@ def kredi_tahmin(request):
             if data['income_annum'] < 120000:
                 oneriler.append("Gelir seviyeniz düşük. Kredi alma şansınızı artırmak için gelir kaynaklarınızı artırmanız önerilir.")
             if debt_to_income_ratio > 0.6:
-                oneriler.append("Gelir-borç oranınız yüksek. Kredi tutarını azaltmak veya gelir artırmak onay şansını artırabilir.")
+                oneriler.append("Gelir-borç oranınız yüksek. Kredi tutarını azaltmak veya geliri artırmak onay şansını artırabilir.")
     else:
         form = KrediTahminForm()
 
     return render(request, "hesap/tahmin.html", {
         "form": form,
         "tahmin": tahmin,
-<<<<<<< HEAD
         "detaylar": detaylar,
         "oneriler": oneriler
     })
@@ -293,7 +262,51 @@ def basvuru_sil(request, basvuru_id):
     basvuru.delete()
     messages.success(request, "Başvuru başarıyla silindi.")
     return redirect("basvuru_gecmisi")
-=======
-        "detaylar": detaylar
-    })
->>>>>>> cd16ae0d949e94e37f67d3ad13a0247f627a0af8
+
+@api_view(["POST"])
+def kredi_tahmin_api(request):
+    serializer = KrediTahminSerializer(data=request.data)
+    if serializer.is_valid():
+        data = serializer.validated_data
+
+        education = 1 if data['education'] == "Graduate" else 0
+        self_employed = 1 if data['self_employed'] == "Yes" else 0
+
+        findeks_notu = data['findeks_notu']
+        cibil_score = int((findeks_notu / 1900) * 600 + 300)
+        if cibil_score <= 600:
+            cibil_group = 0
+        elif cibil_score <= 750:
+            cibil_group = 1
+        else:
+            cibil_group = 2
+
+        total_assets = (
+            data['residential_assets_value'] +
+            data['commercial_assets_value'] +
+            data['luxury_assets_value'] +
+            data['bank_asset_value']
+        )
+        debt_to_income_ratio = data['loan_amount'] / (data['income_annum'] + 1)
+
+        girdi = np.array([[ 
+            data['no_of_dependents'],
+            education,
+            self_employed,
+            data['income_annum'],
+            data['loan_amount'],
+            data['loan_term'],
+            data['residential_assets_value'],
+            data['commercial_assets_value'],
+            data['luxury_assets_value'],
+            data['bank_asset_value'],
+            cibil_group,
+            total_assets,
+            debt_to_income_ratio
+        ]])
+        girdi_scaled = scaler.transform(girdi)
+        sonuc = kredi_model.predict(girdi_scaled)[0]
+        tahmin = "Onaylandı" if sonuc == 1 else "Reddedildi"
+
+        return Response({"tahmin": tahmin})
+    return Response(serializer.errors, status=400)

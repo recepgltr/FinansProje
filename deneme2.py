@@ -9,7 +9,7 @@ import joblib
 import xgboost as xgb
 
 # 1. Veri Yükle
-df = pd.read_csv("loan_approval_dataset.csv")
+df = pd.read_csv("loan_approval_dataset_tl.csv")
 df.columns = df.columns.str.strip()
 
 # 2. Kategorik Verileri Encode Et

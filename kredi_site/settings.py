@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'hesap',  # ← kendi app'in
+    'rest_framework',
 ]
 
 # === Middleware ===

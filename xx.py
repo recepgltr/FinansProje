@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import joblib
 
 # === 1. Veri Yükleme ===
-df = pd.read_csv("loan_approval_dataset.csv")
+df = pd.read_csv("loan_approval_dataset_tl.csv")
 df.columns = df.columns.str.strip()
 print("✅ Veri şekli:", df.shape)
 print(df.head())

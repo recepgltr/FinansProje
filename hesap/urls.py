@@ -1,5 +1,7 @@
-from django.urls import path
+from django.contrib import admin  # ✅ Sadece bu satır olmalı
+from django.urls import path, include
 from . import views
+from .views import kredi_tahmin_api
 
 urlpatterns = [
     path('', views.anasayfa, name='anasayfa'),
@@ -11,5 +13,6 @@ urlpatterns = [
     path('gecmis/', views.basvuru_gecmisi, name='basvuru_gecmisi'),
     path('basvuru/<int:basvuru_id>/', views.basvuru_detay, name='basvuru_detay'),
     path('basvuru/sil/<int:basvuru_id>/', views.basvuru_sil, name='basvuru_sil'),
-
+    path("api/tahmin/", kredi_tahmin_api, name="kredi_tahmin_api"),
+    path('admin/', admin.site.urls),
 ]
