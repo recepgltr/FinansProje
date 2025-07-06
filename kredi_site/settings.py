@@ -96,3 +96,5 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+# settings.py
+LOGIN_URL = '/giris/'
