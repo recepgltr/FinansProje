@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ yazi.baslik }}</h2>
+    <p class="text-muted">Yayın Tarihi: {{ yazi.yayin_tarihi|date:"d.m.Y" }} | Yazar: {{ yazi.yazar }}</p>
+    <hr>
+    <p>{{ yazi.icerik|linebreaks }}</p>
+    <a href="{% url 'blog_list' %}" class="btn btn-outline-secondary mt-3">← Geri Dön</a>
+</div>
+{% endblock %}

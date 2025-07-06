@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h3>📝 Blog Yazıları</h3>
+    <hr>
+    {% for yazi in yazilar %}
+        <div class="card my-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ yazi.baslik }}</h5>
+                <p class="card-text">{{ yazi.icerik|truncatewords:30 }}</p>
+                <a href="{% url 'blog_detay' yazi.slug %}" class="btn btn-sm btn-primary">Devamını Oku</a>
+            </div>
+        </div>
+    {% empty %}
+        <p>Henüz blog yazısı eklenmemiş.</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-primary">Kullanıcı Yorumları</h2>
+
+    <form method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="yorum" class="form-label">Yorumunuz:</label>
+            <textarea name="yorum" rows="3" class="form-control" required>{{ form.yorum.value }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Gönder</button>
+    </form>
+
+    <hr>
+    <h4>Yorumlar:</h4>
+    {% for y in yorumlar %}
+        <div class="p-3 mb-2 border rounded shadow-sm" style="background-color: var(--bs-tertiary-bg);">
+            <strong>{{ y.kullanici.username }}</strong>: {{ y.yorum }}
+        </div>
+    {% empty %}
+        <p>Henüz yorum yapılmamış.</p>
+    {% endfor %}
+</div>
+{% endblock %}

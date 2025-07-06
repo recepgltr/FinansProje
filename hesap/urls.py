@@ -15,4 +15,8 @@ urlpatterns = [
     path('basvuru/sil/<int:basvuru_id>/', views.basvuru_sil, name='basvuru_sil'),
     path("api/tahmin/", kredi_tahmin_api, name="kredi_tahmin_api"),
     path('admin/', admin.site.urls),
+    path('yorumlar/', views.yorumlar, name='yorumlar'),
+    path('blog/', views.blog_list, name='blog_list'),
+    path('blog/<slug:slug>/', views.blog_detay, name='blog_detay'),
+
 ]

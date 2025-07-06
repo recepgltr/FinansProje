@@ -1,5 +1,6 @@
 from django import forms
 from .models import UserProfile
+from .models import KullaniciYorumu
 
 # === Profil Güncelleme Formu ===
 class ProfilGuncelleForm(forms.ModelForm):
@@ -75,3 +76,8 @@ class KrediTahminForm(forms.Form):
         label="Banka Varlık Değeri (₺)", min_value=0,
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
+
+class KullaniciYorumuForm(forms.ModelForm):
+    class Meta:
+        model = KullaniciYorumu
+        fields = ['yorum']

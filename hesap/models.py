@@ -38,3 +38,25 @@ class Basvuru(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.sonuc} ({self.tarih.strftime('%d.%m.%Y')})"
+
+class KullaniciYorumu(models.Model):
+    kullanici = models.ForeignKey(User, on_delete=models.CASCADE)
+    yorum = models.TextField()
+    tarih = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.kullanici.username} - {self.tarih.strftime('%Y-%m-%d')}"
+    
+
+class BlogPost(models.Model):
+    baslik = models.CharField(max_length=200)
+    icerik = models.TextField()
+    yazar = models.ForeignKey(User, on_delete=models.CASCADE)
+    yayin_tarihi = models.DateTimeField(auto_now_add=True)
+    slug = models.SlugField(unique=True, max_length=200)
+
+    class Meta:
+        ordering = ['-yayin_tarihi']
+
+    def __str__(self):
+        return self.baslik

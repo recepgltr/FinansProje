@@ -85,6 +85,11 @@
 
     <!-- Sağ: Kullanıcı bilgileri veya butonlar -->
     <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'yorumlar' %}" class="text-decoration-none">
+        💬 Yorumlar
+      </a>
+      <a href="{% url 'blog_list' %}">📝 Blog</a>
+
 
       <!-- Tema butonu -->
       <button id="themeToggle" class="btn btn-sm btn-outline-secondary ms-1" title="Tema Değiştir">
@@ -96,7 +101,6 @@
           <i class="bi bi-person-circle me-1"></i>{{ user.username }}
         </a>
 
-        <!-- 🌟 Yeni: Başvuru Geçmişi bağlantısı -->
         <a href="{% url 'basvuru_gecmisi' %}" class="btn btn-outline-info btn-sm">
           <i class="bi bi-folder-check me-1"></i>Geçmiş
         </a>

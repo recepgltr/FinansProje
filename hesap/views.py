@@ -14,15 +14,15 @@ from .models import UserProfile, Basvuru
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import KrediTahminSerializer
+from .forms import KullaniciYorumuForm
+from .models import KullaniciYorumu, BlogPost
 
-# === MODELİ VE SCALER'I YÜKLE ===
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, 'kredi_model_birlesik.pkl')
 SCALER_PATH = os.path.join(BASE_DIR, 'kredi_scaler_birlesik.pkl')
 kredi_model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
-# === Anasayfa ===
 def anasayfa(request):
     if request.session.get("giris_basarili"):
         del request.session["giris_basarili"]
@@ -52,7 +52,6 @@ def anasayfa(request):
             url = f"http://data.fixer.io/api/latest?access_key={api_key}&symbols=USD,TRY"
             resp = requests.get(url, timeout=5)
             kur_data = resp.json()
-
             eur_try = float(kur_data["rates"]["TRY"])
             eur_usd = float(kur_data["rates"]["USD"])
             usd = round(eur_try / eur_usd, 2)
@@ -77,7 +76,6 @@ def anasayfa(request):
 
     return render(request, 'hesap/anasayfa.html', context)
 
-# === Giriş Yap ===
 def giris_yap(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -99,7 +97,6 @@ def giris_yap(request):
 
     return render(request, "hesap/giris.html")
 
-# === Kayıt Ol ===
 def kayit_ol(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -118,13 +115,11 @@ def kayit_ol(request):
             return redirect("anasayfa")
     return render(request, "hesap/kayit.html")
 
-# === Çıkış Yap ===
 def cikis_yap(request):
     logout(request)
     messages.success(request, "Başarıyla çıkış yaptınız.")
     return redirect("anasayfa")
 
-# === Profil ===
 @login_required
 def profil(request):
     profil, _ = UserProfile.objects.get_or_create(user=request.user)
@@ -137,7 +132,6 @@ def profil(request):
 
     return render(request, "hesap/profil.html", {"form": form, "profil": profil})
 
-# === Kredi Tahmin ===
 @login_required
 def kredi_tahmin(request):
     tahmin, detaylar, oneriler = None, {}, []
@@ -146,11 +140,12 @@ def kredi_tahmin(request):
         form = KrediTahminForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-
             education = 1 if data['education'] == "Graduate" else 0
             self_employed = 1 if data['self_employed'] == "Yes" else 0
 
-            score = data['cibil_score']
+            findeks = data['findeks_puani']
+            score = int((findeks / 1900) * 600 + 300)
+
             if score <= 600:
                 cibil_group, cibil_str = 0, "Düşük"
             elif score <= 750:
@@ -186,21 +181,6 @@ def kredi_tahmin(request):
             sonuc = kredi_model.predict(girdi_scaled)[0]
             tahmin = "✅ Kredi Onaylandı" if sonuc == 1 else "❌ Kredi Reddedildi"
 
-            try:
-                api_key = "87a957afa3b6b2dbf08ccd85828de8c4"
-                url = f"http://data.fixer.io/api/latest?access_key={api_key}&symbols=USD,TRY"
-                resp = requests.get(url, timeout=5)
-                kur_data = resp.json()
-
-                eur_try = float(kur_data["rates"]["TRY"])
-                eur_usd = float(kur_data["rates"]["USD"])
-                usd = round(eur_try / eur_usd, 2)
-                eur = round(eur_try, 2)
-                altin = 2450.00
-            except Exception as e:
-                print("Kur API hatası:", e)
-                usd = eur = altin = None
-
             Basvuru.objects.create(
                 user=request.user,
                 sonuc="Onaylandı" if sonuc == 1 else "Reddedildi",
@@ -211,14 +191,14 @@ def kredi_tahmin(request):
                 income_annum=data['income_annum'],
                 loan_amount=data['loan_amount'],
                 loan_term=data['loan_term'],
-                cibil_score=data['cibil_score'],
+                cibil_score=score,
                 residential_assets_value=data['residential_assets_value'],
                 commercial_assets_value=data['commercial_assets_value'],
                 luxury_assets_value=data['luxury_assets_value'],
                 bank_asset_value=data['bank_asset_value'],
-                usd_kuru=usd,
-                eur_kuru=eur,
-                altin_kuru=altin,
+                usd_kuru="-",
+                eur_kuru="-",
+                altin_kuru="-",
             )
 
             detaylar = {
@@ -228,7 +208,7 @@ def kredi_tahmin(request):
             }
 
             if score < 650:
-                oneriler.append("CIBIL skorunuz düşük. Ödemelerinizi düzenli yaparak ve borçlarınızı azaltarak skoru artırabilirsiniz.")
+                oneriler.append("Findeks puanınız düşük. Ödemelerinizi düzenli yaparak ve borçlarınızı azaltarak puanı artırabilirsiniz.")
             if data['income_annum'] < 120000:
                 oneriler.append("Gelir seviyeniz düşük. Kredi alma şansınızı artırmak için gelir kaynaklarınızı artırmanız önerilir.")
             if debt_to_income_ratio > 0.6:
@@ -243,19 +223,16 @@ def kredi_tahmin(request):
         "oneriler": oneriler
     })
 
-# === Başvuru Geçmişi ===
 @login_required
 def basvuru_gecmisi(request):
     basvurular = Basvuru.objects.filter(user=request.user).order_by('-tarih')
     return render(request, 'hesap/gecmis.html', {'basvurular': basvurular})
 
-# === Başvuru Detay ===
 @login_required
 def basvuru_detay(request, basvuru_id):
     basvuru = get_object_or_404(Basvuru, id=basvuru_id, user=request.user)
     return render(request, "hesap/basvuru_detay.html", {"basvuru": basvuru})
 
-# === Başvuru Sil ===
 @login_required
 def basvuru_sil(request, basvuru_id):
     basvuru = get_object_or_404(Basvuru, id=basvuru_id, user=request.user)
@@ -268,7 +245,6 @@ def kredi_tahmin_api(request):
     serializer = KrediTahminSerializer(data=request.data)
     if serializer.is_valid():
         data = serializer.validated_data
-
         education = 1 if data['education'] == "Graduate" else 0
         self_employed = 1 if data['self_employed'] == "Yes" else 0
 
@@ -310,3 +286,28 @@ def kredi_tahmin_api(request):
 
         return Response({"tahmin": tahmin})
     return Response(serializer.errors, status=400)
+
+@login_required
+def yorumlar(request):
+    if request.method == 'POST':
+        form = KullaniciYorumuForm(request.POST)
+        if form.is_valid():
+            yorum = form.save(commit=False)
+            yorum.kullanici = request.user
+            yorum.save()
+    else:
+        form = KullaniciYorumuForm()
+
+    tum_yorumlar = KullaniciYorumu.objects.all().order_by('-tarih')
+    return render(request, 'hesap/yorumlar.html', {
+        'form': form,
+        'yorumlar': tum_yorumlar
+    })
+
+def blog_list(request):
+    yazilar = BlogPost.objects.all().order_by('-yayin_tarihi')
+    return render(request, 'hesap/blog_list.html', {'yazilar': yazilar})
+
+def blog_detay(request, slug):
+    yazi = get_object_or_404(BlogPost, slug=slug)
+    return render(request, 'hesap/blog_detay.html', {'yazi': yazi})
